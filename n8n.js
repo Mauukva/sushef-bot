@@ -1,12 +1,13 @@
 // n8n.js - интеграция с n8n workflow
 const axios = require('axios');
-const TelegramBot = require('node-telegram-bot-api');
 
 // URL webhook из n8n
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://primary-production-ff51e.up.railway.app/webhook/f30c923c-c5f3-4bf4-955d-890080196241';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
 
-// Telegram bot для скачивания файлов
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN);
+if (!N8N_WEBHOOK_URL) {
+  console.error('❌ N8N_WEBHOOK_URL не задан в .env!');
+  process.exit(1);
+}
 
 /**
  * Скачать файл из Telegram и конвертировать в base64
@@ -17,11 +18,17 @@ async function downloadFile(fileId) {
   try {
     console.log(`📥 Скачивание файла: ${fileId}`);
     
-    // Получаем путь к файлу
-    const file = await bot.getFile(fileId);
-    const fileUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${file.file_path}`;
+    const token = process.env.TELEGRAM_BOT_TOKEN;
     
-    console.log(`📡 Загрузка с: ${file.file_path}`);
+    // Получаем путь к файлу через прямой API вызов (без создания второго инстанса бота)
+    const fileInfo = await axios.get(`https://api.telegram.org/bot${token}/getFile`, {
+      params: { file_id: fileId }
+    });
+    
+    const filePath = fileInfo.data.result.file_path;
+    const fileUrl = `https://api.telegram.org/file/bot${token}/${filePath}`;
+    
+    console.log(`📡 Загрузка с: ${filePath}`);
     
     // Скачиваем файл как binary
     const response = await axios.get(fileUrl, {

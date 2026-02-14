@@ -13,6 +13,22 @@ const bot = new TelegramBot(token, { polling: true });
 console.log('🤖 Бот SuShef запущен!');
 
 // ============================================
+// GRACEFUL SHUTDOWN (для Railway)
+// ============================================
+function shutdown(signal) {
+  console.log(`\n⏹ Получен ${signal}, останавливаю бота...`);
+  bot.stopPolling().then(() => {
+    console.log('✅ Polling остановлен. Выход.');
+    process.exit(0);
+  }).catch(() => {
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+// ============================================
 // КОМАНДА: /start
 // ============================================
 bot.onText(/\/start/, async (msg) => {
